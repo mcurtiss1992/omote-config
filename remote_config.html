@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OMOTE Remote Configuration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    /* Container that approximates the shape of the remote */
+    .remote {
+      position: relative;
+      width: 200px;
+      height: 600px;
+      margin: 0 auto;
+      background: #444;
+      border-radius: 30px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.4);
+    }
+
+    /* A "screen" area near the top */
+    .screen {
+      position: absolute;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 200px;
+      background: #222;
+      border-radius: 8px;
+      box-shadow: inset 0 0 4px rgba(0,0,0,0.7);
+    }
+
+    /* Power button at the top-right */
+    .power-button {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      width: 35px;
+      height: 25px;
+      background: red;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    /* Playback controls (rewind, play/pause, forward) */
+    .playback {
+      position: absolute;
+      top: 250px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    .playback .btn {
+      width: 30px;
+      height: 30px;
+      background: #bbb;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    /* A circular d-pad area with directional arrows + OK */
+    .dpad {
+      width: 100px;
+      height: 100px;
+      background: #555;
+      border-radius: 50%;
+      position: relative;
+      margin: 0 auto;
+    }
+    /* Individual directional buttons */
+    .dpad .arrow {
+      position: absolute;
+      background: #888;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      border-radius: 5px;
+      color: #333;
+    }
+    .dpad .up {
+      top: 5px; left: 50%;
+      transform: translate(-50%, 0);
+      width: 30px; height: 20px;
+    }
+    .dpad .down {
+      bottom: 5px; left: 50%;
+      transform: translate(-50%, 0);
+      width: 30px; height: 20px;
+    }
+    .dpad .left {
+      left: 5px; top: 50%;
+      transform: translate(0, -50%);
+      width: 20px; height: 30px;
+    }
+    .dpad .right {
+      right: 5px; top: 50%;
+      transform: translate(0, -50%);
+      width: 20px; height: 30px;
+    }
+    /* OK button in the center */
+    .dpad .ok {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 32px; height: 32px;
+      background: #ccc;
+      border-radius: 50%;
+      color: #111;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .middle-buttons{
+      position: absolute;
+      top: 300px;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .middle-buttons .left-middle-buttons{
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin-right: -10px;
+      padding-left: 10px;
+    }
+    .middle-buttons .right-middle-buttons{
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin-left: -10px;
+      padding-right: 10px;
+    }
+    .middle-buttons .btn{
+      width: 40px;
+      height: 25px;
+      background: #888;
+      margin: 5px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .vol-chan-control{
+      display: flex;
+      flex-direction: row;
+      position: absolute;
+      top: 420px;
+      left: 20px;
+      justify-content: space-between;
+      width: 160px;
+    }
+    .volume-controls .btn {
+      width: 40px;
+      height: 25px;
+      background: #888;
+      margin: 5px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .mute-record .btn{
+      width: 40px;
+      height: 25px;
+      background: #888;
+      margin: 5px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .channel-controls .btn {
+      width: 40px;
+      height: 25px;
+      background: #888;
+      margin: 5px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    .color-buttons {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+    }
+    .color-buttons .btn {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .red    { background: red; }
+    .green  { background: green; }
+    .yellow { background: yellow; }
+    .blue   { background: blue; }
+    .save-scene-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      font-size: 16px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background: #fff;
+      width: 300px;
+      margin: 8% auto;
+      padding: 20px;
+      border-radius: 5px;
+      text-align: left;
+      position: relative;
+    }
+    .close {
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+      color: #999;
+    }
+    .close:hover { color: #333; }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    select, button {
+      margin-top: 5px;
+      width: 100%;
+    }
+    .save-btn {
+      background: #4CAF50;
+      color: #fff;
+      border: none;
+      padding: 8px;
+      border-radius: 3px;
+    }
+    .cancel-btn {
+      background: #ccc;
+      border: none;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .status {
+      margin-top: 10px;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .sequence-editor {
+  max-width: 500px;           /* narrower width */
+  margin: 20px auto;
+  background: #e8f5e9;        /* light green background */
+  padding: 15px;
+  border: 2px solid #4CAF50;  /* green border */
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.2);
+  text-align: left;
+  height: 300px;              /* fixed height for scrolling */
+  overflow-y: auto;
+}
+
+.sequence-editor h2 {
+  background: #4CAF50;        /* green header */
+  color: #fff;
+  padding: 8px;
+  margin: -15px -15px 15px -15px;
+  border-radius: 6px 6px 0 0;
+  text-align: center;
+  font-size: 18px;
+}
+
+.sequence-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+.sequence-row select,
+.sequence-row input {
+  padding: 5px;
+  font-size: 14px;
+  flex: 1;
+  width: auto;
+}
+
+#sequenceEditor input[type=number]{
+  max-width: 75px;
+}
+
+.sequence-row button {
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+}
+
+.sequence-controls {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.sequence-controls button {
+  padding: 8px 16px;
+  font-size: 14px;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin: 0 5px;
+}
+
+
+.site-header {
+    position: static;
+    width: 100%;
+    background-color: #2c3e50; /* Dark blue-gray */
+    padding: 15px 0;
+    text-align: center;
+}
+
+.nav-bar a {
+    color: #ecf0f1; /* Light gray */
+    text-decoration: none;
+    font-size: 18px;
+    margin: 0 15px;
+    font-weight: bold;
+    transition: color 0.3s ease-in-out;
+}
+
+.nav-bar a:hover {
+    color: #1abc9c; /* Green accent */
+}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-bar">
+        <a href="omote_home.html">Home</a>
+        <a href="omote_scene_manager.html">Scene Manager</a>
+        <a href="omote_device_manager.html">Device Manager</a>
+        <a href="omote_global_config.html">Global Config</a>
+    </nav>
+</header>
+  <h1>OMOTE Remote Configuration</h1>
+  <p>
+    This page loads the current scene configuration from 
+    <code>http://omote/getJson?filename=scene_SceneName.json</code> 
+    (based on <code>?scene=SceneName</code>) and lets you edit each button’s commands.
+  </p>
+  
+  <!-- The Remote Layout -->
+  <div class="remote">
+    <div class="screen"></div>
+    <div class="power-button" onclick="openModal('Power')"></div>
+
+    <!-- Playback controls -->
+    <div class="playback">
+      <div class="btn" onclick="openModal('Stop')">&#9209;</div>
+      <div class="btn" onclick="openModal('Rewind')">⏪</div>
+      <div class="btn" onclick="openModal('PlayPause')">⏯</div>
+      <div class="btn" onclick="openModal('Forward')">⏩</div>
+    </div>
+
+    <!-- D-Pad (Up/Down/Left/Right + OK) -->
+    <div class="middle-buttons">
+      <div class="left-middle-buttons">
+        <div class="btn" onclick="openModal('Guide')">&#8801;</div>
+        <div class="btn" onclick="openModal('Back')">&#11013;</div>
+      </div>
+      <div class="dpad">
+        <div class="arrow up" onclick="openModal('Up')">▲</div>
+        <div class="arrow down" onclick="openModal('Down')">▼</div>
+        <div class="arrow left" onclick="openModal('Left')">◀</div>
+        <div class="arrow right" onclick="openModal('Right')">▶</div>
+        <div class="ok" onclick="openModal('OK')">OK</div>
+      </div>
+      <div class="right-middle-buttons">
+        <div class="btn" onclick="openModal('Info')">&#128712;</div>
+        <div class="btn" onclick="openModal('Exit')">&#11146;</div>
+      </div>
+    </div>
+
+    <!-- Volume, Mute/Record, and Channel Controls -->
+    <div class="vol-chan-control">
+      <div class="volume-controls">
+        <div class="btn" onclick="openModal('VolumeUp')">Vol+</div>
+        <div class="btn" onclick="openModal('VolumeDown')">Vol-</div>
+      </div>
+      <div class="mute-record">
+        <div class="btn" onclick="openModal('Mute')">&#128263;</div>
+        <div class="btn" onclick="openModal('Record')">&#9210;</div>
+      </div>
+      <div class="channel-controls">
+        <div class="btn" onclick="openModal('ChannelUp')">CH+</div>
+        <div class="btn" onclick="openModal('ChannelDown')">CH-</div>
+      </div>
+    </div>
+
+    <!-- Color buttons near the bottom -->
+    <div class="color-buttons">
+      <div class="btn red" onclick="openModal('Red')"></div>
+      <div class="btn green" onclick="openModal('Green')"></div>
+      <div class="btn yellow" onclick="openModal('Yellow')"></div>
+      <div class="btn blue" onclick="openModal('Blue')"></div>
+    </div>
+  </div>
+
+ <!-- Scene Sequence Editor -->
+ <div class="sequence-editor">
+  <h2>Scene Sequence Editor</h2>
+  <div id="sequenceEditor">
+    <!-- Dynamic sequence rows will be inserted here -->
+  </div>
+  <div class="sequence-controls">
+    <button type="button" onclick="addSequenceRow()">Add Command</button>
+  </div>
+</div>
+
+<!-- Save Scene Button -->
+<button class="save-scene-btn" onclick="saveScene()">Save Scene</button>
+<div class="status" id="statusMessage"></div>
+
+<!-- Modal for button configuration (unchanged except for dynamic form content) -->
+<div id="configModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3 id="modalTitle"></h3>
+    <form id="buttonConfigForm">
+      <!-- Dynamic form content inserted here -->
+    </form>
+  </div>
+</div>
+
+<script>
+  let sceneName = 'Default'; // fallback scene name
+  let buttonConfigs = {};    // holds current config for remote buttons
+  let availableDevices = []; // list from devices.json
+  let deviceCommandsCache = {}; // cache for device commands
+  let sceneSequence = [];    // dynamic list of scene sequence commands
+
+  // On load: fetch scene config and available devices.
+  window.addEventListener('DOMContentLoaded', async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('scene')) {
+      sceneName = urlParams.get('scene');
+    }
+    const statusEl = document.getElementById('statusMessage');
+    statusEl.textContent = 'Loading scene: ' + sceneName + '...';
+    try {
+      const fetchUrl = `http://omote/getJson?filename=scene_${sceneName}.json`;
+      const response = await fetch(fetchUrl);
+      if (!response.ok) throw new Error('Failed to fetch scene JSON');
+      const data = await response.json();
+      buttonConfigs = data;
+      // Load sequence if defined; otherwise, initialize as empty.
+      sceneSequence = buttonConfigs.sequence || [];
+      statusEl.textContent = 'Loaded scene: ' + sceneName;
+    } catch (err) {
+      statusEl.textContent = 'Error loading scene: ' + err.message;
+      buttonConfigs = {};
+      sceneSequence = [];
+    }
+    loadDevices();
+    renderSequenceEditor();
+  });
+
+  // Load available devices.
+  async function loadDevices() {
+    try {
+      const response = await fetch('http://omote/getJson?filename=devices.json');
+      if (!response.ok) throw new Error('Failed to fetch devices');
+      availableDevices = await response.json();
+    } catch (err) {
+      console.error('Error loading devices:', err);
+    }
+  }
+
+  // --- Modal functions for remote button configuration (unchanged) ---
+  function openModal(buttonName) {
+    const modal = document.getElementById('configModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const form = document.getElementById('buttonConfigForm');
+    modal.style.display = 'block';
+    modalTitle.textContent = `Configure ${buttonName}`;
+    form.innerHTML = '';
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.id = 'buttonId';
+    hiddenInput.name = 'buttonId';
+    hiddenInput.value = buttonName;
+    form.appendChild(hiddenInput);
+    if (["Red", "Green", "Yellow", "Blue"].includes(buttonName)) {
+      const label = document.createElement('label');
+      label.htmlFor = 'sceneSelect';
+      label.textContent = 'Select Scene:';
+      form.appendChild(label);
+      const sceneSelect = document.createElement('select');
+      sceneSelect.id = 'sceneSelect';
+      sceneSelect.name = 'sceneSelect';
+      form.appendChild(sceneSelect);
+      loadScenesForModal();
+    } else {
+      const labelDevice = document.createElement('label');
+      labelDevice.htmlFor = 'deviceSelect';
+      labelDevice.textContent = 'Select Device:';
+      form.appendChild(labelDevice);
+      const deviceSelect = document.createElement('select');
+      deviceSelect.id = 'deviceSelect';
+      deviceSelect.name = 'deviceSelect';
+      availableDevices.forEach(device => {
+        const option = document.createElement('option');
+        option.value = device;
+        option.textContent = device;
+        deviceSelect.appendChild(option);
+      });
+      form.appendChild(deviceSelect);
+      const labelCommand = document.createElement('label');
+      labelCommand.htmlFor = 'commandSelect';
+      labelCommand.textContent = 'Select Command:';
+      form.appendChild(labelCommand);
+      const commandSelect = document.createElement('select');
+      commandSelect.id = 'commandSelect';
+      commandSelect.name = 'commandSelect';
+      form.appendChild(commandSelect);
+      deviceSelect.addEventListener('change', (e) => loadDeviceCommands(e.target.value, commandSelect));
+      if (availableDevices.length > 0) {
+        loadDeviceCommands(availableDevices[0], document.getElementById('commandSelect'));
+      }
+    }
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'save-btn';
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick = saveButtonConfig;
+    form.appendChild(saveBtn);
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'cancel-btn';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick = closeModal;
+    form.appendChild(cancelBtn);
+    if (buttonConfigs[buttonName]) {
+      const cfg = buttonConfigs[buttonName];
+      if (["Red", "Green", "Yellow", "Blue"].includes(buttonName)) {
+        const sceneSelect = document.getElementById('sceneSelect');
+        setTimeout(() => {
+          sceneSelect.value = cfg.scene || sceneSelect.options[0].value;
+        }, 500);
+      } else {
+        const deviceSelect = document.getElementById('deviceSelect');
+        deviceSelect.value = cfg.device || (availableDevices[0] || '');
+        loadDeviceCommands(deviceSelect.value, document.getElementById('commandSelect')).then(() => {
+          const commandSelect = document.getElementById('commandSelect');
+          commandSelect.value = cfg.command || '';
+        });
+      }
+    }
+  }
+  function saveButtonConfig() {
+    const buttonId = document.getElementById('buttonId').value;
+    if (["Red", "Green", "Yellow", "Blue"].includes(buttonId)) {
+      const selectedScene = document.getElementById('sceneSelect').value;
+      buttonConfigs[buttonId] = { scene: selectedScene };
+    } else {
+      const selectedDevice = document.getElementById('deviceSelect').value;
+      const selectedCommand = document.getElementById('commandSelect').value;
+      buttonConfigs[buttonId] = { device: selectedDevice, command: selectedCommand };
+    }
+    console.log('Saved config for', buttonId, buttonConfigs[buttonId]);
+    closeModal();
+  }
+  function closeModal() {
+    document.getElementById('configModal').style.display = 'none';
+  }
+  window.onclick = function(event) {
+    const modal = document.getElementById('configModal');
+    if (event.target === modal) closeModal();
+  }
+  async function loadScenesForModal() {
+    const sceneSelect = document.getElementById('sceneSelect');
+    sceneSelect.innerHTML = '';
+    try {
+      const response = await fetch('http://omote/getJson?filename=scenes.json');
+      if (!response.ok) throw new Error('Failed to fetch scenes');
+      const scenes = await response.json();
+      const sceneArray = Array.isArray(scenes) ? scenes : scenes.scenes;
+      sceneArray.forEach(scene => {
+        const option = document.createElement('option');
+        option.value = scene;
+        option.textContent = scene;
+        sceneSelect.appendChild(option);
+      });
+    } catch (err) {
+      console.error('Error loading scenes for modal:', err);
+    }
+  }
+  function loadDeviceCommands(device, targetSelect) {
+  if (targetSelect) targetSelect.innerHTML = '';
+  if (deviceCommandsCache[device]) {
+    if (targetSelect) {
+      populateCommandSelectInElement(deviceCommandsCache[device], targetSelect);
+    }
+    return Promise.resolve(deviceCommandsCache[device]);
+  }
+  return fetch(`http://omote/getJson?filename=device_${device}.json`)
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to fetch commands for ' + device);
+      return response.json();
+    })
+    .then(commands => {
+      deviceCommandsCache[device] = commands;
+      if (targetSelect) {
+        populateCommandSelectInElement(commands, targetSelect);
+      }
+      return commands;
+    })
+    .catch(err => {
+      console.error(err);
+      return Promise.reject(err);
+    });
+}
+
+function populateCommandSelectInElement(commands, selectElement) {
+  selectElement.innerHTML = '';
+  if (Array.isArray(commands)) {
+    commands.forEach(cmd => {
+      const option = document.createElement('option');
+      option.value = cmd.name;
+      option.textContent = cmd.name;
+      selectElement.appendChild(option);
+    });
+  }
+}
+  // --- End Modal Functions ---
+
+  // --- Scene Sequence Editor Functions ---
+  function renderSequenceEditor() {
+    const container = document.getElementById('sequenceEditor');
+    container.innerHTML = '';
+    sceneSequence.forEach((cmd, index) => {
+      const row = document.createElement('div');
+      row.className = 'sequence-row';
+      row.dataset.index = index;
+      // Type select: "Command" or "Sleep"
+      const typeSelect = document.createElement('select');
+      typeSelect.onchange = (e) => {
+        sceneSequence[index].type = e.target.value;
+        renderSequenceEditor();
+      };
+      const optCommand = document.createElement('option');
+      optCommand.value = 'command';
+      optCommand.textContent = 'Command';
+      const optSleep = document.createElement('option');
+      optSleep.value = 'sleep';
+      optSleep.textContent = 'Sleep';
+      typeSelect.appendChild(optCommand);
+      typeSelect.appendChild(optSleep);
+      typeSelect.value = cmd.type || 'command';
+      row.appendChild(typeSelect);
+      
+if (typeSelect.value === 'command') {
+  // Device select for command.
+  const deviceSelect = document.createElement('select');
+  availableDevices.forEach(device => {
+    const option = document.createElement('option');
+    option.value = device;
+    option.textContent = device;
+    deviceSelect.appendChild(option);
+  });
+  deviceSelect.value = cmd.device || (availableDevices[0] || '');
+  deviceSelect.onchange = (e) => { 
+    sceneSequence[index].device = e.target.value; 
+    renderSequenceEditor(); 
+  };
+  row.appendChild(deviceSelect);
+
+  // Command select for command.
+  const commandSelect = document.createElement('select');
+  row.appendChild(commandSelect);
+
+  // Load commands for the selected device and pass the created commandSelect element.
+  loadDeviceCommands(deviceSelect.value, commandSelect).then(() => {
+    commandSelect.value = cmd.command || (commandSelect.options[0] ? commandSelect.options[0].value : '');
+    sceneSequence[index].command = commandSelect.value;
+  });
+} else if (typeSelect.value === 'sleep') {
+        // Input for sleep duration in ms.
+        const sleepInput = document.createElement('input');
+        sleepInput.type = 'number';
+        sleepInput.placeholder = 'Duration (ms)';
+        sleepInput.value = cmd.duration || 1000;
+        sleepInput.oninput = (e) => { sceneSequence[index].duration = parseInt(e.target.value) || 0; };
+        row.appendChild(sleepInput);
+      }
+      // Up button.
+      const upBtn = document.createElement('button');
+      upBtn.textContent = '↑';
+      upBtn.onclick = () => { if (index > 0) { [sceneSequence[index-1], sceneSequence[index]] = [sceneSequence[index], sceneSequence[index-1]]; renderSequenceEditor(); } };
+      row.appendChild(upBtn);
+      // Down button.
+      const downBtn = document.createElement('button');
+      downBtn.textContent = '↓';
+      downBtn.onclick = () => { if (index < sceneSequence.length - 1) { [sceneSequence[index+1], sceneSequence[index]] = [sceneSequence[index], sceneSequence[index+1]]; renderSequenceEditor(); } };
+      row.appendChild(downBtn);
+      // Remove button.
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = 'Remove';
+      removeBtn.onclick = () => { sceneSequence.splice(index, 1); renderSequenceEditor(); };
+      row.appendChild(removeBtn);
+      container.appendChild(row);
+    });
+  }
+  function addSequenceRow() {
+    // Add a default command row.
+    sceneSequence.push({ type: 'command', device: availableDevices[0] || '', command: '' });
+    renderSequenceEditor();
+  }
+  // --- End Scene Sequence Editor Functions ---
+
+  // Save entire scene configuration (including buttonConfigs and sequence).
+  async function saveScene() {
+    const statusEl = document.getElementById('statusMessage');
+    statusEl.textContent = 'Saving scene...';
+    // Attach the sequence to the scene config.
+    buttonConfigs.sequence = sceneSequence;
+    try {
+      const formData = new FormData();
+      formData.append('filename', `scene_${sceneName}.json`);
+      formData.append('action', 'Save');
+      formData.append('jsonContent', JSON.stringify(buttonConfigs));
+      const response = await fetch('http://omote/postJson', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Failed to save scene');
+      const text = await response.text();
+      statusEl.textContent = 'Save successful: ' + text;
+    } catch (err) {
+      statusEl.textContent = 'Error saving scene: ' + err.message;
+    }
+  }
+</script>
+</body>
+</html>
