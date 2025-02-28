@@ -13,7 +13,7 @@
     h1 { margin-bottom: 20px; }
     form {
       background: #fff;
-      max-width: 600px;
+      max-width: 700px;
       margin: 0 auto;
       padding: 20px;
       border-radius: 8px;
@@ -158,6 +158,14 @@
         dataInput.oninput = (e) => { commands[index].commandData = e.target.value; };
         row.appendChild(dataInput);
 
+          // Command Data input
+          const dataInputExtended = document.createElement('input');
+          dataInputExtended.type = 'text';
+          dataInputExtended.placeholder = 'Command Data Extended';
+          dataInputExtended.value = cmd.commandDataExtended || '';
+          dataInputExtended.oninput = (e) => { commands[index].commandDataExtended = e.target.value; };
+          row.appendChild(dataInputExtended);
+
         // Remove button to delete this command
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
@@ -175,7 +183,7 @@
 
     // Handler to add a new command (empty row)
     document.getElementById('addCommandBtn').addEventListener('click', () => {
-      commands.push({ name: '', commandType: 'IR', commandData: '' });
+      commands.push({ name: '', commandType: 'IR', commandData: '' , commandDataExtended: ''});
       renderCommands();
     });
 
