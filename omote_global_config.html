@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OMOTE Global Configuration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    form {
+      background: #fff;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    }
+    .config-field {
+      margin-bottom: 15px;
+      text-align: left;
+      display: flex;
+      align-items: center;
+    }
+    .config-field label {
+      flex: 1;
+      font-weight: bold;
+      padding-right: 10px;
+    }
+    .config-field input {
+      flex: 2;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .remove-button {
+      background: red;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-left: 10px;
+    }
+    .remove-button:hover {
+      background: darkred;
+    }
+    #addConfigButton, #saveButton {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #addConfigButton:hover, #saveButton:hover {
+      background: #45a049;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .site-header {
+    position: static;
+    width: 100%;
+    background-color: #2c3e50; /* Dark blue-gray */
+    padding: 15px 0;
+    text-align: center;
+}
+
+.nav-bar a {
+    color: #ecf0f1; /* Light gray */
+    text-decoration: none;
+    font-size: 18px;
+    margin: 0 15px;
+    font-weight: bold;
+    transition: color 0.3s ease-in-out;
+}
+
+.nav-bar a:hover {
+    color: #1abc9c; /* Green accent */
+}
+  </style>
+</head>
+<body>
+    <header class="site-header">
+        <nav class="nav-bar">
+            <a href="omote_home.html">Home</a>
+            <a href="omote_scene_manager.html">Scene Manager</a>
+            <a href="omote_device_manager.html">Device Manager</a>
+            <a href="omote_global_config.html">Global Config</a>
+        </nav>
+    </header>
+  <h1>OMOTE Global Configuration</h1>
+  <p>Adjust or add global settings below:</p>
+  
+  <form id="globalConfigForm">
+    <div id="configFields">
+      <!-- Input fields will be dynamically generated here -->
+    </div>
+    <button type="button" id="addConfigButton">Add New Setting</button>
+    <button type="button" id="saveButton">Save Global Config</button>
+  </form>
+
+  <div class="status" id="statusMessage"></div>
+
+  <script>
+    let configData = {}; // Store loaded configuration
+
+    // Fetch global config from backend
+    async function loadGlobalConfig() {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Loading global configuration...';
+      try {
+        const response = await fetch('http://omote/getJson?filename=omote_global_config.json');
+        if (!response.ok) {
+          throw new Error('Failed to fetch global config');
+        }
+        configData = await response.json();
+        populateFields(configData);
+        statusEl.textContent = 'Global configuration loaded.';
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + err.message;
+      }
+    }
+
+    // Populate the form with current config fields
+    function populateFields(config) {
+      const container = document.getElementById('configFields');
+      container.innerHTML = '';
+      for (const key in config) {
+        if (config.hasOwnProperty(key)) {
+          addConfigField(key, config[key]);
+        }
+      }
+    }
+
+    // Add a new setting field dynamically
+    function addConfigField(key = '', value = '') {
+      const container = document.getElementById('configFields');
+      
+      const fieldDiv = document.createElement('div');
+      fieldDiv.className = 'config-field';
+
+      const label = document.createElement('label');
+      label.textContent = key || 'New Setting';
+      fieldDiv.appendChild(label);
+
+      const input = document.createElement('input');
+      input.value = value;
+      input.setAttribute('data-key', key);
+      input.oninput = updateConfigData;
+      fieldDiv.appendChild(input);
+
+      const removeButton = document.createElement('button');
+      removeButton.textContent = '✖';
+      removeButton.className = 'remove-button';
+      removeButton.onclick = () => {
+        delete configData[key]; 
+        container.removeChild(fieldDiv);
+      };
+      fieldDiv.appendChild(removeButton);
+
+      container.appendChild(fieldDiv);
+
+      if (!key) {
+        input.focus();
+      }
+    }
+
+    // Update the configData object when input changes
+    function updateConfigData(event) {
+      const input = event.target;
+      const key = input.getAttribute('data-key');
+      if (key) {
+        configData[key] = input.value;
+      }
+    }
+
+    // Add new config entry (user provides key)
+    document.getElementById('addConfigButton').addEventListener('click', () => {
+      const newKey = prompt('Enter the name of the new setting:');
+      if (newKey && !configData.hasOwnProperty(newKey)) {
+        configData[newKey] = '';
+        addConfigField(newKey, '');
+      } else {
+        alert('Invalid or duplicate setting name.');
+      }
+    });
+
+    // Save updated configuration to backend
+    document.getElementById('saveButton').addEventListener('click', async () => {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Saving global configuration...';
+
+      // Collect updated values from input fields
+      const inputs = document.querySelectorAll('#configFields input');
+      configData = {};
+      inputs.forEach(input => {
+        const key = input.previousSibling.textContent.trim();
+        configData[key] = input.value;
+      });
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('filename', 'omote_global_config.json');
+      formData.append('action', 'Save');
+      formData.append('jsonContent', JSON.stringify(configData));
+
+      try {
+        const response = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) {
+          throw new Error('Failed to save global config');
+        }
+        const text = await response.text();
+        statusEl.textContent = 'Global configuration saved: ' + text;
+      } catch (err) {
+        statusEl.textContent = 'Error saving configuration: ' + err.message;
+      }
+    });
+
+    loadGlobalConfig();
+  </script>
+</body>
+</html>

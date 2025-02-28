@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Device Configuration</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 20px;
+      text-align: center;
+    }
+    h1 { margin-bottom: 20px; }
+    form {
+      background: #fff;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    }
+    .command-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    .command-row input, .command-row select {
+      padding: 8px;
+      font-size: 14px;
+      flex: 1;
+    }
+    .command-row .remove-btn {
+      background: red;
+      color: white;
+      border: none;
+      padding: 8px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    #addCommandBtn, #saveBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #addCommandBtn { background: #4CAF50; color: white; }
+    #saveBtn { background: #2196F3; color: white; }
+    .status { margin-top: 20px; font-size: 14px; color: #666; }
+
+    .site-header {
+    position: static;
+    width: 100%;
+    background-color: #2c3e50; /* Dark blue-gray */
+    padding: 15px 0;
+    text-align: center;
+}
+
+.nav-bar a {
+    color: #ecf0f1; /* Light gray */
+    text-decoration: none;
+    font-size: 18px;
+    margin: 0 15px;
+    font-weight: bold;
+    transition: color 0.3s ease-in-out;
+}
+
+.nav-bar a:hover {
+    color: #1abc9c; /* Green accent */
+}
+  </style>
+</head>
+<body>
+    <header class="site-header">
+        <nav class="nav-bar">
+            <a href="omote_home.html">Home</a>
+            <a href="omote_scene_manager.html">Scene Manager</a>
+            <a href="omote_device_manager.html">Device Manager</a>
+            <a href="omote_global_config.html">Global Config</a>
+        </nav>
+    </header>
+  <h1>Device Configuration for <span id="deviceName"></span></h1>
+  <form id="deviceConfigForm">
+    <div id="commandList">
+      <!-- Command rows will be dynamically inserted here -->
+    </div>
+    <button type="button" id="addCommandBtn">Add Command</button>
+    <button type="button" id="saveBtn">Save Device Config</button>
+  </form>
+  <div class="status" id="statusMessage"></div>
+
+  <script>
+    // Parse device name from URL (e.g. ?device=TV)
+    const urlParams = new URLSearchParams(window.location.search);
+    const deviceName = urlParams.get('device') || 'Default';
+    document.getElementById('deviceName').textContent = deviceName;
+
+    // Global array to store device commands (each command is an object)
+    let commands = [];
+
+    // Load device configuration from backend (device_DEVICE.json)
+    async function loadDeviceConfig() {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Loading device configuration...';
+      try {
+        const response = await fetch(`http://omote/getJson?filename=device_${deviceName}.json`);
+        if (!response.ok) throw new Error('Failed to fetch device config');
+        commands = await response.json();
+        // If the file is empty or not an array, initialize as empty array.
+        if (!Array.isArray(commands)) {
+          commands = [];
+        }
+        renderCommands();
+        statusEl.textContent = 'Device configuration loaded.';
+      } catch (err) {
+        // If an error occurs (or file does not exist), start with an empty config.
+        commands = [];
+        renderCommands();
+        statusEl.textContent = 'No existing config found, starting with an empty configuration.';
+      }
+    }
+
+    // Render command rows from the commands array
+    function renderCommands() {
+      const listEl = document.getElementById('commandList');
+      listEl.innerHTML = '';
+      commands.forEach((cmd, index) => {
+        const row = document.createElement('div');
+        row.className = 'command-row';
+
+        // Command Name input
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Command Name';
+        nameInput.value = cmd.name || '';
+        nameInput.oninput = (e) => { commands[index].name = e.target.value; };
+        row.appendChild(nameInput);
+
+        // Command Type select
+        const typeSelect = document.createElement('select');
+        ['IR', 'BLE', 'MQTT'].forEach(type => {
+          const option = document.createElement('option');
+          option.value = type;
+          option.textContent = type;
+          if (cmd.commandType === type) option.selected = true;
+          typeSelect.appendChild(option);
+        });
+        typeSelect.onchange = (e) => { commands[index].commandType = e.target.value; };
+        row.appendChild(typeSelect);
+
+        // Command Data input
+        const dataInput = document.createElement('input');
+        dataInput.type = 'text';
+        dataInput.placeholder = 'Command Data';
+        dataInput.value = cmd.commandData || '';
+        dataInput.oninput = (e) => { commands[index].commandData = e.target.value; };
+        row.appendChild(dataInput);
+
+        // Remove button to delete this command
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = '✖';
+        removeBtn.className = 'remove-btn';
+        removeBtn.onclick = () => {
+          commands.splice(index, 1);
+          renderCommands();
+        };
+        row.appendChild(removeBtn);
+
+        listEl.appendChild(row);
+      });
+    }
+
+    // Handler to add a new command (empty row)
+    document.getElementById('addCommandBtn').addEventListener('click', () => {
+      commands.push({ name: '', commandType: 'IR', commandData: '' });
+      renderCommands();
+    });
+
+    // Save updated device configuration back to the backend
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Saving device configuration...';
+
+      const formData = new FormData();
+      formData.append('filename', `device_${deviceName}.json`);
+      formData.append('action', 'Save');
+      formData.append('jsonContent', JSON.stringify(commands));
+
+      try {
+        const response = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) throw new Error('Failed to save device config');
+        const text = await response.text();
+        statusEl.textContent = 'Device configuration saved: ' + text;
+      } catch (err) {
+        statusEl.textContent = 'Error saving configuration: ' + err.message;
+      }
+    });
+
+    loadDeviceConfig();
+  </script>
+</body>
+</html>

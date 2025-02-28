@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OMOTE Home</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 16px;
+    }
+    .link-container {
+      margin: 30px auto;
+    }
+    .link-button {
+      display: inline-block;
+      margin: 10px;
+      padding: 15px 25px;
+      background: #4CAF50;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 18px;
+      transition: background 0.3s ease;
+    }
+    .link-button:hover {
+      background: #45a049;
+    }
+    .site-header {
+    position: static;
+    width: 100%;
+    background-color: #2c3e50; /* Dark blue-gray */
+    padding: 15px 0;
+    text-align: center;
+}
+
+.nav-bar a {
+    color: #ecf0f1; /* Light gray */
+    text-decoration: none;
+    font-size: 18px;
+    margin: 0 15px;
+    font-weight: bold;
+    transition: color 0.3s ease-in-out;
+}
+
+.nav-bar a:hover {
+    color: #1abc9c; /* Green accent */
+}
+
+  </style>
+</head>
+<body>
+    <header class="site-header">
+        <nav class="nav-bar">
+            <a href="omote_home.html">Home</a>
+            <a href="omote_scene_manager.html">Scene Manager</a>
+            <a href="omote_device_manager.html">Device Manager</a>
+            <a href="omote_global_config.html">Global Config</a>
+        </nav>
+    </header>
+  <h1>Welcome to OMOTE</h1>
+  <p>Select an option below:</p>
+  <div class="link-container">
+    <a class="link-button" href="omote_scene_manager.html">Scene Manager</a>
+    <a class="link-button" href="omote_global_config.html">Global Config Manager</a>
+    <a class="link-button" href="omote_devices_config.html">Device Manager</a>
+  </div>
+</body>
+</html>

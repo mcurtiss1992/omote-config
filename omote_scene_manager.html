@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OMOTE Scene Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #f4f4f4;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .scene-list {
+      list-style: none;
+      padding: 0;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .scene-item {
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .scene-item button {
+      margin-left: 5px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    .create-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .site-header {
+    position: static;
+    width: 100%;
+    background-color: #2c3e50; /* Dark blue-gray */
+    padding: 15px 0;
+    text-align: center;
+}
+
+.nav-bar a {
+    color: #ecf0f1; /* Light gray */
+    text-decoration: none;
+    font-size: 18px;
+    margin: 0 15px;
+    font-weight: bold;
+    transition: color 0.3s ease-in-out;
+}
+
+.nav-bar a:hover {
+    color: #1abc9c; /* Green accent */
+}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-bar">
+        <a href="omote_home.html">Home</a>
+        <a href="omote_scene_manager.html">Scene Manager</a>
+        <a href="omote_device_manager.html">Device Manager</a>
+        <a href="omote_global_config.html">Global Config</a>
+    </nav>
+</header>
+  <h1>OMOTE Scene Manager</h1>
+  <ul class="scene-list" id="sceneList">
+    <!-- Scene items will be added here -->
+  </ul>
+  <button class="create-btn" onclick="createScene()">Create Scene</button>
+  <div class="status" id="statusMessage"></div>
+
+  <script>
+    let scenes = []; // Array to store scene names
+    const sceneListEl = document.getElementById('sceneList');
+    const statusEl = document.getElementById('statusMessage');
+
+    // Load scenes.json from the server
+    async function loadScenes() {
+      statusEl.textContent = 'Loading scenes...';
+      try {
+        const response = await fetch('http://omote/getJson?filename=scenes.json');
+        if (!response.ok) throw new Error('Failed to load scenes.json');
+        const data = await response.json();
+        // Expecting the JSON structure to be: { "scenes": ["Scene1", "Scene2", ...] }
+        scenes = data.scenes || [];
+        statusEl.textContent = 'Scenes loaded.';
+        renderScenes();
+      } catch (err) {
+        statusEl.textContent = 'Error loading scenes: ' + err.message;
+      }
+    }
+
+    // Render the list of scenes with Edit and Delete buttons
+    function renderScenes() {
+      sceneListEl.innerHTML = '';
+      scenes.forEach(scene => {
+        const li = document.createElement('li');
+        li.className = 'scene-item';
+        li.innerHTML = `<span>${scene}</span>
+                        <div>
+                          <button onclick="editScene('${scene}')">Edit</button>
+                          <button onclick="deleteScene('${scene}')">Delete</button>
+                        </div>`;
+        sceneListEl.appendChild(li);
+      });
+    }
+
+    // Navigate to the configuration page for editing a scene
+    function editScene(sceneName) {
+      // Assumes the remote configuration page is remote_config.html and expects ?scene=SceneName
+      window.location.href = `remote_config.html?scene=${encodeURIComponent(sceneName)}`;
+    }
+
+    // Create a new scene
+    async function createScene() {
+      let sceneName = prompt('Enter a name for the new scene:');
+      if (!sceneName) {
+        alert('Scene name cannot be empty.');
+        return;
+      }
+      sceneName = sceneName.trim();
+      if (scenes.includes(sceneName)) {
+        alert('A scene with that name already exists.');
+        return;
+      }
+      
+      // Add the new scene to the list
+      scenes.push(sceneName);
+      // Update scenes.json on the server
+      const scenesData = { scenes };
+      const formData = new FormData();
+      formData.append('filename', 'scenes.json');
+      formData.append('action', 'Save');
+      formData.append('jsonContent', JSON.stringify(scenesData));
+      
+      try {
+        const response = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) throw new Error('Failed to save scenes.json');
+        const text = await response.text();
+        statusEl.textContent = 'Scenes updated: ' + text;
+      } catch (err) {
+        statusEl.textContent = 'Error saving scenes: ' + err.message;
+        return;
+      }
+
+      // Create an empty scene configuration file for the new scene (scene_<sceneName>.json)
+      const emptyConfig = {};
+      const formDataScene = new FormData();
+      formDataScene.append('filename', `scene_${sceneName}.json`);
+      formDataScene.append('action', 'Save');
+      formDataScene.append('jsonContent', JSON.stringify(emptyConfig));
+      try {
+        const responseScene = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formDataScene
+        });
+        if (!responseScene.ok) throw new Error('Failed to create scene config');
+        const textScene = await responseScene.text();
+        statusEl.textContent = 'Scene created: ' + textScene;
+      } catch (err) {
+        statusEl.textContent = 'Error creating scene config: ' + err.message;
+        return;
+      }
+      
+      renderScenes();
+      // Navigate to the scene configuration page
+      editScene(sceneName);
+    }
+
+    // Delete a scene: remove it from scenes.json and delete its config file
+    async function deleteScene(sceneName) {
+      if (!confirm(`Are you sure you want to delete scene "${sceneName}"?`)) return;
+      
+      // Remove the scene from the scenes array
+      scenes = scenes.filter(scene => scene !== sceneName);
+      // Update scenes.json on the server
+      const scenesData = { scenes };
+      const formData = new FormData();
+      formData.append('filename', 'scenes.json');
+      formData.append('action', 'Save');
+      formData.append('jsonContent', JSON.stringify(scenesData));
+      try {
+        const response = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) throw new Error('Failed to update scenes.json');
+        const text = await response.text();
+        statusEl.textContent = 'Scenes updated: ' + text;
+      } catch (err) {
+        statusEl.textContent = 'Error updating scenes: ' + err.message;
+        return;
+      }
+      
+      // Delete the scene configuration file
+      const formDataDelete = new FormData();
+      formDataDelete.append('filename', `scene_${sceneName}.json`);
+      formDataDelete.append('action', 'Delete');
+      try {
+        const responseDel = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formDataDelete
+        });
+        if (!responseDel.ok) throw new Error('Failed to delete scene config');
+        const textDel = await responseDel.text();
+        statusEl.textContent = 'Scene deleted: ' + textDel;
+      } catch (err) {
+        statusEl.textContent = 'Error deleting scene config: ' + err.message;
+      }
+      renderScenes();
+    }
+
+    // Load scenes on page load
+    loadScenes();
+  </script>
+</body>
+</html>
