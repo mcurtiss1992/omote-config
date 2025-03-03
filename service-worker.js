@@ -7,7 +7,7 @@ const ASSETS_TO_CACHE = [
   "/omote-config/omote_global_config.html",
   "/omote-config/omote_scene_manager.html",
   "/omote-config/remote_config.html",
-  "/omote-config/icons/icon-48x48.html",
+  "/omote-config/icons/icon-48x48.png",
   "/omote-config/icons/icon-72x72.png",
   "/omote-config/icons/icon-96x96.png",
   "/omote-config/icons/icon-144x144.png",
