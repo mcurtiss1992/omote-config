@@ -1,0 +1,42 @@
+{
+    "name": "OMOTE Config",
+    "short_name": "OCon",
+    "description": "A configuration tool for an open-source universal remote.",
+    "start_url": "/omote_home.html",
+    "display": "standalone",
+    "background_color": "#2c3e50",
+    "theme_color": "#4CAF50",
+    "icons": [
+      {
+        "src": "/icons/icon-48x48.png",
+        "sizes": "48x48",
+        "type": "image/png"
+      },
+      {
+        "src": "/icons/icon-72x72.png",
+        "sizes": "72x72",
+        "type": "image/png"
+      },
+      {
+        "src": "/icons/icon-96x96.png",
+        "sizes": "96x96",
+        "type": "image/png"
+      },
+      {
+        "src": "/icons/icon-144x144.png",
+        "sizes": "144x144",
+        "type": "image/png"
+      },
+      {
+        "src": "/icons/icon-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "/icons/icon-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }
+  
