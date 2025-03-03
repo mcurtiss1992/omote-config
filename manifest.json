@@ -2,7 +2,7 @@
     "name": "OMOTE Config",
     "short_name": "OCon",
     "description": "A configuration tool for an open-source universal remote.",
-    "start_url": "omote-config/index.html",
+    "start_url": "/index.html",
     "display": "standalone",
     "background_color": "#2c3e50",
     "theme_color": "#4CAF50",
