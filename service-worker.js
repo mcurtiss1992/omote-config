@@ -1,7 +1,7 @@
 const CACHE_NAME = "omote-config-cache-v1";
 const ASSETS_TO_CACHE = [
   "/omote-config/",
-  "/omote-config/omote_home.html",
+  "/omote-config/index.html",
   "/omote-config/omote_device_manager.html",
   "/omote-config/omote_device_config.html",
   "/omote-config/omote_global_config.html",
