@@ -6,6 +6,13 @@
     "display": "standalone",
     "background_color": "#2c3e50",
     "theme_color": "#4CAF50",
+    "screenshots": [
+      {
+        "src": "/images/omote-screenshot.png",
+        "sizes": "1280x720",
+        "type": "image/png"
+      }
+    ],
     "icons": [
       {
         "src": "icons/icon-48x48.png",
