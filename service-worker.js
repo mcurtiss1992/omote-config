@@ -1,4 +1,4 @@
-const CACHE_NAME = "omote-config-cache-v1";
+const CACHE_NAME = "omote-config-cache-localhost-v1";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
