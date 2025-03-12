@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GUI List</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 20px;
+      text-align: center;
+    }
+    .site-header {
+      position: static;
+      width: 100%;
+      background-color: #2c3e50;
+      padding: 15px 0;
+      text-align: center;
+    }
+    .nav-bar a {
+      color: #ecf0f1;
+      text-decoration: none;
+      font-size: 18px;
+      margin: 0 15px;
+      font-weight: bold;
+      transition: color 0.3s ease-in-out;
+    }
+    .nav-bar a:hover {
+      color: #1abc9c;
+    }
+    h1 { margin-bottom: 20px; }
+    .container {
+      background: #fff;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    }
+    .gui-card {
+      position: relative;
+      background: #e9ecef;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .gui-card:hover {
+      background: #ced4da;
+    }
+    .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      font-weight: bold;
+      cursor: pointer;
+      line-height: 21px;
+      padding: 0;
+    }
+    .add-gui-section {
+      margin-top: 30px;
+      padding: 15px;
+      border-top: 1px solid #ccc;
+    }
+    .add-gui-section input {
+      padding: 8px;
+      font-size: 14px;
+      margin: 5px;
+      width: calc(45% - 10px);
+    }
+    .add-gui-section button {
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    .status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-bar">
+      <a href="omote_home.html">Home</a>
+      <a href="omote_scene_manager.html">Scene Manager</a>
+      <a href="omote_device_manager.html">Device Manager</a>
+      <a href="omote_global_config.html">Global Config</a>
+<a href="omote_gui_manager.html">Gui Config</a><a href="omote_json_list.html">Direct Json Editing</a>
+    </nav>
+  </header>
+  <h1>GUI List</h1>
+  <div class="container" id="guiListContainer">
+    <!-- GUI cards will be inserted here -->
+  </div>
+  
+  <!-- Add New GUI Section -->
+  <div class="container add-gui-section">
+    <h3>Add New GUI</h3>
+    <input type="text" id="newGuiDisplayName" placeholder="Display Name">
+    <input type="text" id="newGuiInternalName" placeholder="Internal Name">
+    <br>
+    <button type="button" id="addNewGuiBtn">Add GUI</button>
+  </div>
+  
+  <div class="status" id="statusMessage"></div>
+  
+  <script>
+    let guiList = [];
+    
+    // Load the list of GUIs from omote (guis.json)
+    async function loadGUIList() {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Loading GUI list...';
+      try {
+        const response = await fetch('http://omote/getJson?filename=guis.json');
+        if (!response.ok) throw new Error('Failed to load GUI list');
+        guiList = await response.json();
+        if (!Array.isArray(guiList)) { guiList = []; }
+        renderGUIList();
+        statusEl.textContent = 'GUI list loaded.';
+      } catch (error) {
+        // If file doesn't exist or error occurs, start with an empty list.
+        guiList = [];
+        renderGUIList();
+        statusEl.textContent = 'No existing GUI list found. Starting with an empty list.';
+      }
+    }
+    
+    // Save the updated GUI list back to omote.
+    async function saveGUIList() {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Saving GUI list...';
+      try {
+        const formData = new FormData();
+        formData.append('filename', 'guis.json');
+        formData.append('action', 'Save');
+        formData.append('jsonContent', JSON.stringify(guiList));
+        const response = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) throw new Error('Failed to save GUI list');
+        const text = await response.text();
+        statusEl.textContent = 'GUI list saved: ' + text;
+      } catch (error) {
+        statusEl.textContent = 'Error saving GUI list: ' + error.message;
+      }
+    }
+    
+    // Render GUI cards in the list.
+    function renderGUIList() {
+      const container = document.getElementById('guiListContainer');
+      container.innerHTML = '';
+      guiList.forEach((gui, index) => {
+        const card = document.createElement('div');
+        card.className = 'gui-card';
+        card.textContent = gui.name;
+        // Clicking the card navigates to the config page.
+        card.addEventListener('click', () => {
+          window.location.href = `omote_gui_config.html?name=${gui.guiname}`;
+        });
+        // Delete button (stops propagation so card click isn’t triggered).
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-btn';
+        delBtn.textContent = '×';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete GUI "${gui.name}"?`)) {
+            guiList.splice(index, 1);
+            renderGUIList();
+            saveGUIList();
+          }
+        });
+        card.appendChild(delBtn);
+        container.appendChild(card);
+      });
+    }
+    
+    // Handler to add a new GUI.
+    document.getElementById('addNewGuiBtn').addEventListener('click', () => {
+      const displayNameEl = document.getElementById('newGuiDisplayName');
+      const internalNameEl = document.getElementById('newGuiInternalName');
+      const displayName = displayNameEl.value.trim();
+      const internalName = internalNameEl.value.trim();
+      if (!displayName || !internalName) {
+        alert('Both Display Name and Internal Name are required.');
+        return;
+      }
+      // Add the new GUI to the list.
+      guiList.push({ name: displayName, guiname: internalName });
+      renderGUIList();
+      saveGUIList();
+      // Clear inputs.
+      displayNameEl.value = '';
+      internalNameEl.value = '';
+    });
+    
+    loadGUIList();
+  </script>
+</body>
+</html>

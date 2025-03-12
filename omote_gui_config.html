@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GUI Editor</title>
+  <!-- Include GridStack CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@7.2.0/dist/gridstack.min.css" />
+  <style>
+    /* Page styling */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 20px;
+      text-align: center;
+    }
+    .site-header {
+      position: static;
+      width: 100%;
+      background-color: #2c3e50;
+      padding: 15px 0;
+      text-align: center;
+    }
+    .nav-bar a {
+      color: #ecf0f1;
+      text-decoration: none;
+      font-size: 18px;
+      margin: 0 15px;
+      font-weight: bold;
+      transition: color 0.3s ease-in-out;
+    }
+    .nav-bar a:hover {
+      color: #1abc9c;
+    }
+    h1 { margin-bottom: 20px; }
+    /* Buttons */
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    #addWidgetBtn { background: #4CAF50; color: white; }
+    #saveBtn { background: #2196F3; color: white; }
+    #deleteGuiBtn { background: red; color: white; }
+    .status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+    /* GridStack container */
+    #gridContainer {
+      background: #fff;
+      margin: 0 auto;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      width: 270px; /* Entire screen width */
+      height: 500px; /* You can adjust this height as needed */
+      position: relative;
+    }
+    .grid-stack-item-content {
+      background: #e9ecef;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    /* Modal for widget editing */
+    .modal {
+      display: none; 
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 400px;
+      border-radius: 8px;
+      text-align: left;
+    }
+    .modal-content label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    .modal-content input,
+    .modal-content select,
+    .modal-content textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav-bar">
+      <a href="omote_home.html">Home</a>
+      <a href="omote_scene_manager.html">Scene Manager</a>
+      <a href="omote_device_manager.html">Device Manager</a>
+      <a href="omote_global_config.html">Global Config</a>
+<a href="omote_gui_manager.html">Gui Config</a><a href="omote_json_list.html">Direct Json Editing</a>
+    </nav>
+  </header>
+  <h1>GUI Editor for <span id="guiName"></span></h1>
+  <!-- Action buttons -->
+  <div>
+    <button id="addWidgetBtn">Add Widget</button>
+    <button id="saveBtn">Save GUI Config</button>
+    <button id="deleteGuiBtn">Delete GUI</button>
+  </div>
+  <!-- Grid container for draggable/resizable widgets -->
+  <div id="gridContainer" class="grid-stack"></div>
+  <div class="status" id="statusMessage"></div>
+  
+  <!-- Modal for editing a widget -->
+  <div id="widgetModal" class="modal">
+    <div class="modal-content">
+      <h3>Edit Widget</h3>
+      <form id="widgetForm">
+        <label for="widgetType">Widget Type:</label>
+        <select id="widgetType" required>
+          <option value="slider">Slider</option>
+          <option value="switch">Switch</option>
+          <option value="button">Button</option>
+          <option value="dropdown">Dropdown</option>
+          <option value="text">Text</option>
+        </select>
+        <label for="widgetLabel">Label:</label>
+        <input type="text" id="widgetLabel" placeholder="Widget label" required>
+        <label for="widgetId">Widget ID:</label>
+        <input type="text" id="widgetId" placeholder="Unique ID" required>
+        <label for="deviceSelect">Device:</label>
+        <select id="deviceSelect">
+          <!-- Options will be populated dynamically -->
+        </select>
+        <label for="commandSelect">Command (for interactive widgets):</label>
+        <select id="commandSelect">
+          <!-- Options will be populated dynamically -->
+        </select>
+        <div id="dropdownOptionsContainer" style="display: none;">
+          <label for="widgetOptions">Dropdown Options (comma-separated):</label>
+          <input type="text" id="widgetOptions" placeholder="Option1, Option2, Option3">
+        </div>
+        <div id="textContentContainer" style="display: none;">
+          <label for="widgetContent">Text Content:</label>
+          <input type="text" id="widgetContent" placeholder="Displayed text">
+        </div>
+        <div style="text-align: right;">
+          <button type="button" id="cancelWidgetBtn">Cancel</button>
+          <button type="submit" id="saveWidgetBtn">Save</button>
+          <button type="button" id="removeWidgetBtn" style="background:red; color:white;">Remove Widget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Include GridStack JS -->
+  <script src="https://cdn.jsdelivr.net/npm/gridstack@7.2.0/dist/gridstack-all.js"></script>
+  <script>
+    // Global variables for GUI configuration
+    let guiConfig = { grid: { columns: 4, itemWidth: 270 }, widgets: [] }; // Ensure widgets is an array
+    const guiName = new URLSearchParams(window.location.search).get('name') || 'default';
+    document.getElementById('guiName').textContent = guiName;
+    
+    let grid; // gridstack instance
+    let selectedWidgetEl = null; // currently selected widget element
+    let selectedWidgetIndex = -1; // index of the selected widget in guiConfig.widgets
+    let availableDevices = []; // list from devices.json
+    let deviceCommandsCache = {}; // cache for device commands
+
+    // Load the GUI configuration from omote (GET)
+    async function loadGUIConfig() {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Loading GUI configuration...';
+      try {
+        const response = await fetch(`http://omote/getJson?filename=gui_${guiName}.json`);
+        if (!response.ok) throw new Error('Failed to load GUI configuration');
+        guiConfig = await response.json();
+        // Ensure widgets is an array
+        if (!Array.isArray(guiConfig.widgets)) {
+          guiConfig.widgets = [];
+        }
+        statusEl.textContent = 'GUI configuration loaded.';
+      } catch (error) {
+        guiConfig = { grid: { columns: 4, itemWidth: 270 }, widgets: [] };
+        statusEl.textContent = 'No existing config found. Starting with an empty configuration.';
+      }
+      renderGrid();
+    }
+
+    // Load available devices.
+    async function loadDevices() {
+      try {
+        const response = await fetch('http://omote/getJson?filename=devices.json');
+        if (!response.ok) throw new Error('Failed to fetch devices');
+        availableDevices = await response.json();
+        // Always ensure the "BLE" device is available.
+        if (!availableDevices.includes("BLE")) {
+          availableDevices.push("BLE");
+        }
+      } catch (err) {
+        console.error('Error loading devices:', err);
+      }
+    }
+
+    // Render grid items based on guiConfig.widgets
+    function renderGrid() {
+      // Initialize GridStack if not already initialized.
+      if (!grid) {
+        grid = GridStack.init({
+          cellHeight: 60,
+          disableOneColumnMode: true,
+          float: true
+        }, document.getElementById('gridContainer'));
+        // Update config on grid change.
+        grid.on('change', function(event, items) {
+          items.forEach(item => {
+            let idx = item.el.getAttribute('data-index');
+            if (idx !== null) {
+              idx = parseInt(idx);
+              guiConfig.widgets[idx].x = item.x;
+              guiConfig.widgets[idx].y = item.y;
+              guiConfig.widgets[idx].w = item.w;
+              guiConfig.widgets[idx].h = item.h;
+            }
+          });
+        });
+      } else {
+        grid.removeAll();
+      }
+      
+      // Add each widget as a grid item.
+      guiConfig.widgets.forEach((widget, index) => {
+        widget.x = widget.x || 0;
+        widget.y = widget.y || 0;
+        widget.w = widget.w || 1;
+        widget.h = widget.h || 1;
+        
+        const content = widget.label || widget.id || widget.type;
+        const el = document.createElement('div');
+        el.classList.add('grid-stack-item');
+        el.setAttribute('data-index', index);
+        el.innerHTML = `<div class="grid-stack-item-content">${content}</div>`;
+        // Double-click to open the widget editor.
+        el.addEventListener('dblclick', () => {
+          openWidgetEditor(index, el);
+        });
+        grid.addWidget(el, {x: widget.x, y: widget.y, w: widget.w, h: widget.h});
+      });
+    }
+
+    // Open the widget editor modal and populate its fields.
+    function openWidgetEditor(index, el) {
+      selectedWidgetIndex = index;
+      selectedWidgetEl = el;
+      const widget = guiConfig.widgets[index];
+      document.getElementById('widgetType').value = widget.type || 'slider';
+      document.getElementById('widgetLabel').value = widget.label || '';
+      document.getElementById('widgetId').value = widget.id || '';
+      document.getElementById('deviceSelect').value = widget.deviceSelect || '';
+      document.getElementById('commandSelect').value = widget.commandSelect || '';
+
+      // Populate device select
+      const deviceSelect = document.getElementById('deviceSelect');
+      deviceSelect.innerHTML = ''; // Clear existing options
+      availableDevices.forEach(device => {
+        const option = document.createElement('option');
+        option.value = device;
+        option.textContent = device;
+        deviceSelect.appendChild(option);
+      });
+      deviceSelect.value = widget.device || (availableDevices[0] || '');
+
+      // Populate command select based on selected device
+      loadDeviceCommands(deviceSelect.value, document.getElementById('commandSelect'));
+
+      // Show extra fields for dropdown or text types.
+      const widgetType = widget.type || 'slider';
+      if (widgetType === 'dropdown') {
+        document.getElementById('dropdownOptionsContainer').style.display = 'block';
+        document.getElementById('textContentContainer').style.display = 'none';
+        document.getElementById('widgetOptions').value = widget.options ? widget.options.join(', ') : '';
+      } else if (widgetType === 'text') {
+        document.getElementById('dropdownOptionsContainer').style.display = 'none';
+        document.getElementById('textContentContainer').style.display = 'block';
+        document.getElementById('widgetContent').value = widget.content || '';
+      } else {
+        document.getElementById('dropdownOptionsContainer').style.display = 'none';
+        document.getElementById('textContentContainer').style.display = 'none';
+      }
+      document.getElementById('widgetModal').style.display = 'block';
+    }
+
+    // Close the widget editor modal.
+    function closeWidgetEditor() {
+      document.getElementById('widgetModal').style.display = 'none';
+      selectedWidgetIndex = -1;
+      selectedWidgetEl = null;
+    }
+
+    // Show or hide extra fields when the widget type changes.
+    document.getElementById('widgetType').addEventListener('change', (e) => {
+      const type = e.target.value;
+      if (type === 'dropdown') {
+        document.getElementById('dropdownOptionsContainer').style.display = 'block';
+        document.getElementById('textContentContainer').style.display = 'none';
+      } else if (type === 'text') {
+        document.getElementById('dropdownOptionsContainer').style.display = 'none';
+        document.getElementById('textContentContainer').style.display = 'block';
+      } else {
+        document.getElementById('dropdownOptionsContainer').style.display = 'none';
+        document.getElementById('textContentContainer').style.display = 'none';
+      }
+    });
+
+    // Save widget changes from the editor.
+    document.getElementById('widgetForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (selectedWidgetIndex < 0) return;
+      const widget = guiConfig.widgets[selectedWidgetIndex];
+      widget.type = document.getElementById('widgetType').value;
+      widget.label = document.getElementById('widgetLabel').value;
+      widget.id = document.getElementById('widgetId').value;
+      widget.device = document.getElementById('deviceSelect').value; // Save selected device
+      widget.command = document.getElementById('commandSelect').value; // Save selected command
+      if (widget.type === 'dropdown') {
+        const opts = document.getElementById('widgetOptions').value;
+        widget.options = opts.split(',').map(s => s.trim()).filter(s => s);
+      } else if (widget.type === 'text') {
+        widget.content = document.getElementById('widgetContent').value;
+      }
+      // Update the grid item's display.
+      if (selectedWidgetEl) {
+        const contentEl = selectedWidgetEl.querySelector('.grid-stack-item-content');
+        contentEl.textContent = widget.label || widget.id || widget.type;
+      }
+      closeWidgetEditor();
+    });
+
+    // Cancel button in the widget editor.
+    document.getElementById('cancelWidgetBtn').addEventListener('click', () => {
+      closeWidgetEditor();
+    });
+
+    // Remove widget button in the widget editor.
+    document.getElementById('removeWidgetBtn').addEventListener('click', () => {
+      if (selectedWidgetIndex >= 0) {
+        if (confirm('Remove this widget?')) {
+          guiConfig.widgets.splice(selectedWidgetIndex, 1);
+          renderGrid();
+          closeWidgetEditor();
+        }
+      }
+    });
+
+    // Add a new widget with default properties.
+    document.getElementById('addWidgetBtn').addEventListener('click', () => {
+      const newWidget = {
+        type: 'slider',
+        label: 'New Widget',
+        id: 'widget' + (guiConfig.widgets.length + 1),
+        device: availableDevices[0] || '', // Default device
+        command: '',
+        x: 0, y: 0, w: 1, h: 1
+      };
+      guiConfig.widgets.push(newWidget);
+      renderGrid();
+    });
+
+    // Save the entire GUI configuration back to omote (POST)
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Saving GUI configuration...';
+      try {
+        const formData = new FormData();
+        formData.append('filename', `gui_${guiName}.json`);
+        formData.append('action', 'Save');
+        formData.append('jsonContent', JSON.stringify(guiConfig));
+        const response = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) throw new Error('Failed to save GUI configuration');
+        const text = await response.text();
+        statusEl.textContent = 'GUI configuration saved: ' + text;
+      } catch (error) {
+        statusEl.textContent = 'Error saving configuration: ' + error.message;
+      }
+    });
+
+    // Delete the entire GUI configuration.
+    document.getElementById('deleteGuiBtn').addEventListener('click', async () => {
+      if (!confirm(`Are you sure you want to delete the entire GUI "${guiName}"? This cannot be undone.`)) {
+        return;
+      }
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.textContent = 'Deleting GUI configuration...';
+      try {
+        const formData = new FormData();
+        formData.append('filename', `gui_${guiName}.json`);
+        formData.append('action', 'Delete');
+        const response = await fetch('http://omote/postJson', {
+          method: 'POST',
+          body: formData
+        });
+        if (!response.ok) throw new Error('Failed to delete GUI configuration');
+        const text = await response.text();
+        statusEl.textContent = 'GUI configuration deleted: ' + text;
+        setTimeout(() => {
+          window.location.href = 'guis_list.html';
+        }, 1500);
+      } catch (error) {
+        statusEl.textContent = 'Error deleting configuration: ' + error.message;
+      }
+    });
+
+    // Load devices when the page loads
+    window.addEventListener('DOMContentLoaded', async () => {
+      await loadDevices();
+      loadGUIConfig();
+    });
+
+    // Modified loadDeviceCommands to support the "BLE" device.
+    function loadDeviceCommands(device, targetSelect) {
+      if (device === "BLE") {
+        const commands = [
+          { name: "KEYBOARD_BLE_UP" },
+          { name: "KEYBOARD_BLE_DOWN" },
+          { name: "KEYBOARD_BLE_RIGHT" },
+          { name: "KEYBOARD_BLE_LEFT" },
+          { name: "KEYBOARD_BLE_SELECT" },
+          { name: "KEYBOARD_BLE_SENDSTRING" },
+          { name: "KEYBOARD_BLE_BACK" },
+          { name: "KEYBOARD_BLE_HOME" },
+          { name: "KEYBOARD_BLE_MENU" },
+          { name: "KEYBOARD_BLE_SCAN_PREVIOUS_TRACK" },
+          { name: "KEYBOARD_BLE_REWIND_LONG" },
+          { name: "KEYBOARD_BLE_REWIND" },
+          { name: "KEYBOARD_BLE_PLAYPAUSE" },
+          { name: "KEYBOARD_BLE_FASTFORWARD" },
+          { name: "KEYBOARD_BLE_FASTFORWARD_LONG" },
+          { name: "KEYBOARD_BLE_SCAN_NEXT_TRACK" },
+          { name: "KEYBOARD_BLE_MUTE" },
+          { name: "KEYBOARD_BLE_VOLUME_INCREMENT" },
+          { name: "KEYBOARD_BLE_VOLUME_DECREMENT" }
+        ];
+        deviceCommandsCache[device] = commands;
+        if (targetSelect) {
+          populateCommandSelectInElement(commands, targetSelect);
+        }
+        return Promise.resolve(commands);
+      }
+      if (targetSelect) targetSelect.innerHTML = '';
+      if (deviceCommandsCache[device]) {
+        if (targetSelect) {
+          populateCommandSelectInElement(deviceCommandsCache[device], targetSelect);
+        }
+        return Promise.resolve(deviceCommandsCache[device]);
+      }
+      return fetch(`http://omote/getJson?filename=device_${device}.json`)
+        .then(response => {
+          if (!response.ok) throw new Error('Failed to fetch commands for ' + device);
+          return response.json();
+        })
+        .then(commands => {
+          deviceCommandsCache[device] = commands;
+          if (targetSelect) {
+            populateCommandSelectInElement(commands, targetSelect);
+          }
+          return commands;
+        })
+        .catch(err => {
+          console.error(err);
+          return Promise.reject(err);
+        });
+    }
+
+    function populateCommandSelectInElement(commands, selectElement) {
+      selectElement.innerHTML = '';
+      if (Array.isArray(commands)) {
+        commands.forEach(cmd => {
+          const option = document.createElement('option');
+          option.value = cmd.name;
+          option.textContent = cmd.name;
+          selectElement.appendChild(option);
+        });
+      }
+    }
+
+    // Event listener for device change to update command options
+    document.getElementById('deviceSelect').addEventListener('change', (e) => {
+      loadDeviceCommands(e.target.value, document.getElementById('commandSelect'));
+    });
+  </script>
+</body>
+</html>
