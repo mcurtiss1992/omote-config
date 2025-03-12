@@ -1,22 +1,23 @@
 const CACHE_NAME = "omote-config-cache-v1";
 const ASSETS_TO_CACHE = [
-  "/omote-config/",
-  "/omote-config/index.html",
-  "/omote-config/omote_device_manager.html",
-  "/omote-config/omote_device_config.html",
-  "/omote-config/omote_global_config.html",
-  "/omote-config/omote_scene_manager.html",
-  "/omote-config/omote_gui_manager.html",
-  "/omote-config/omote_gui_config.html",
-  "/omote-config/omote_json_direct_edit.html",
-  "/omote-config/omote_json_list.html",
-  "/omote-config/remote_config.html",
-  "/omote-config/icons/icon-48x48.png",
-  "/omote-config/icons/icon-72x72.png",
-  "/omote-config/icons/icon-96x96.png",
-  "/omote-config/icons/icon-144x144.png",
-  "/omote-config/icons/icon-192x192.png",
-  "/omote-config/icons/icon-512x512.png"
+  "/",
+  "/index.html",
+  "/omote_device_manager.html",
+  "/omote_device_config.html",
+  "/omote_global_config.html",
+  "/omote_scene_manager.html",
+  "/omote_gui_manager.html",
+  "/omote_gui_config.html",
+  "/omote_json_direct_edit.html",
+  "/omote_json_list.html",
+  "/remote_config.html",
+  "/icons/icon-48x48.png",
+  "/icons/icon-72x72.png",
+  "/icons/icon-96x96.png",
+  "/icons/icon-144x144.png",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+  "/favicon.ico"
 ];
 
 // Install service worker and cache assets
