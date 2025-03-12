@@ -9,8 +9,9 @@
     "screenshots": [
       {
         "src": "images/omote-screenshot.png",
-        "sizes": "1280x720",
-        "type": "image/png"
+        "sizes": "1159x579",
+        "type": "image/png",
+        "form_factor": "wide"
       }
     ],
     "icons": [
