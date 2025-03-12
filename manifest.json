@@ -8,7 +8,7 @@
     "theme_color": "#4CAF50",
     "screenshots": [
       {
-        "src": "/images/omote-screenshot.png",
+        "src": "images/omote-screenshot.png",
         "sizes": "1280x720",
         "type": "image/png"
       }
