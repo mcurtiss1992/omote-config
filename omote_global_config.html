@@ -217,7 +217,7 @@
       formData.append('jsonContent', JSON.stringify(configData));
 
       try {
-        const response = await fetch('http://omote/postJson', {
+        const response = await fetch('http://omote/smallUpload', {
           method: 'POST',
           body: formData
         });

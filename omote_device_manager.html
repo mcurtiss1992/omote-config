@@ -145,7 +145,7 @@
       statusEl.textContent = 'Creating device...';
 
       try {
-        const response = await fetch('http://omote/postJson', {
+        const response = await fetch('http://omote/smallUpload', {
           method: 'POST',
           body: new URLSearchParams({
             filename: `device_${deviceName}.json`,
@@ -154,6 +154,9 @@
           })
         });
 
+
+
+
         if (!response.ok) throw new Error('Failed to create device');
 
         // Add device to the list in `devices.json`
@@ -161,7 +164,7 @@
         const devices = await devicesRes.json();
         devices.push(deviceName);
 
-        await fetch('http://omote/postJson', {
+        await fetch('http://omote/smallUpload', {
           method: 'POST',
           body: new URLSearchParams({
             filename: 'devices.json',
@@ -185,20 +188,26 @@
       statusEl.textContent = 'Deleting device...';
 
       try {
-        await fetch('http://omote/postJson', {
-          method: 'POST',
-          body: new URLSearchParams({
-            filename: `device_${deviceName}.json`,
-            action: 'Delete'
-          })
+        const formData = new FormData();
+        const deviceFilename = `device_${deviceName}.json`;
+        formData.append('filename', deviceFilename);
+        formData.append('action', 'Delete');
+        const response = await fetch('http://omote/postJson', { 
+          method: 'POST', 
+          body: formData, 
+          signal: AbortSignal.timeout(30000) 
         });
+        if (!response.ok) throw new Error('Failed to save JSON file');
+        const text = await response.text();
+        statusMessage.textContent = 'Delete successful: ' + text;
+        statusMessage.textContent = 'Error saving JSON file: ' + err.message;
 
         // Remove device from `devices.json`
         const devicesRes = await fetch('http://omote/getJson?filename=devices.json');
         const devices = await devicesRes.json();
         const updatedDevices = devices.filter(d => d !== deviceName);
 
-        await fetch('http://omote/postJson', {
+        await fetch('http://omote/smallUpload', {
           method: 'POST',
           body: new URLSearchParams({
             filename: 'devices.json',

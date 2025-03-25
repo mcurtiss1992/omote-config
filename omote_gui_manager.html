@@ -149,7 +149,7 @@
         formData.append('filename', 'guis.json');
         formData.append('action', 'Save');
         formData.append('jsonContent', JSON.stringify(guiList));
-        const response = await fetch('http://omote/postJson', {
+        const response = await fetch('http://omote/smallUpload', {
           method: 'POST',
           body: formData
         });

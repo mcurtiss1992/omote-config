@@ -18,8 +18,7 @@ const ASSETS_TO_CACHE = [
   "/icons/icon-144x144.png",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
-  "/favicon.ico",
-  "/*"
+  "/favicon.ico"
 ];
 
 // Install service worker and cache assets

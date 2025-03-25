@@ -382,21 +382,33 @@
     document.getElementById('saveBtn').addEventListener('click', async () => {
       const statusEl = document.getElementById('statusMessage');
       statusEl.textContent = 'Saving GUI configuration...';
+        // Validate the JSON first.
+        let parsed;
+        try {
+            parsed = JSON.parse(JSON.stringify(guiConfig));
+        } catch (err) {
+            statusMessage.textContent = 'Invalid JSON: ' + err.message;
+            return;
+        }
       try {
         const formData = new FormData();
-        formData.append('filename', `gui_${guiName}.json`);
+        const guiFileName = `gui_${guiName}.json`;
+        formData.append('filename', guiFileName);
         formData.append('action', 'Save');
-        formData.append('jsonContent', JSON.stringify(guiConfig));
-        const response = await fetch('http://omote/postJson', {
-          method: 'POST',
-          body: formData
-        });
-        if (!response.ok) throw new Error('Failed to save GUI configuration');
-        const text = await response.text();
-        statusEl.textContent = 'GUI configuration saved: ' + text;
-      } catch (error) {
-        statusEl.textContent = 'Error saving configuration: ' + error.message;
-      }
+        // Convert JSON to a Blob so it is treated as a file upload
+        const jsonBlob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
+        formData.append('jsonContent', jsonBlob, guiFileName);
+          const response = await fetch('http://omote/postJson', { 
+            method: 'POST', 
+            body: formData, 
+            signal: AbortSignal.timeout(30000) 
+          });
+          if (!response.ok) throw new Error('Failed to save JSON file');
+          const text = await response.text();
+          statusMessage.textContent = 'Save successful: ' + text;
+        } catch (err) {
+          statusMessage.textContent = 'Error saving JSON file: ' + err.message;
+        }
     });
 
     // Delete the entire GUI configuration.

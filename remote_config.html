@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>OMOTE Remote Configuration</title>
   <style>
+    /* (Keep your existing CSS – only new sections may require additional styling) */
     body {
       font-family: Arial, sans-serif;
       background: #f4f4f4;
@@ -13,7 +14,6 @@
     h1 {
       margin-bottom: 10px;
     }
-    /* Container that approximates the shape of the remote */
     .remote {
       position: relative;
       width: 200px;
@@ -362,6 +362,50 @@
     .nav-bar a:hover {
       color: #1abc9c;
     }
+    .extras-section {
+      max-width: 500px;
+      margin: 20px auto;
+      background: #e8f5e9;
+      padding: 15px;
+      border: 2px solid #4CAF50;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+      text-align: left;
+      overflow-y: auto;
+    }
+    .extras-section h2 {
+      background: #4CAF50;
+      color: #fff;
+      padding: 8px;
+      margin: -15px -15px 15px -15px;
+      border-radius: 6px 6px 0 0;
+      text-align: center;
+      font-size: 18px;
+    }
+    .sequence-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 5px;
+      border-bottom: 1px solid #ccc;
+    }
+    .sequence-row select,
+    .sequence-row input {
+      padding: 5px;
+      font-size: 14px;
+      flex: 1;
+      width: auto;
+    }
+    .sequence-row button {
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -371,7 +415,8 @@
       <a href="omote_scene_manager.html">Scene Manager</a>
       <a href="omote_device_manager.html">Device Manager</a>
       <a href="omote_global_config.html">Global Config</a>
-<a href="omote_gui_manager.html">Gui Config</a><a href="omote_json_list.html">Direct Json Editing</a>
+      <a href="omote_gui_manager.html">Gui Config</a>
+      <a href="omote_json_list.html">Direct Json Editing</a>
     </nav>
   </header>
   <h1>OMOTE Remote Configuration</h1>
@@ -392,7 +437,7 @@
       <div class="btn" onclick="openModal('PlayPause')">⏯</div>
       <div class="btn" onclick="openModal('Forward')">⏩</div>
     </div>
-    <!-- D-Pad (Up/Down/Left/Right + OK) -->
+    <!-- D-Pad and middle buttons -->
     <div class="middle-buttons">
       <div class="left-middle-buttons">
         <div class="btn" onclick="openModal('Guide')">&#8801;</div>
@@ -434,14 +479,33 @@
     </div>
   </div>
 
-  <!-- Scene Sequence Editor -->
-  <div class="sequence-editor">
+  <!-- Scene Sequence Editor (On Sequence) -->
+  <div class="extras-section">
     <h2>Scene Sequence Editor</h2>
     <div id="sequenceEditor">
       <!-- Dynamic sequence rows will be inserted here -->
     </div>
     <div class="sequence-controls">
       <button type="button" onclick="addSequenceRow()">Add Command</button>
+    </div>
+  </div>
+
+  <!-- Scene Off Sequence Editor -->
+  <div class="extras-section">
+    <h2>Scene Off Sequence Editor</h2>
+    <div id="offSequenceEditor">
+      <!-- Off sequence rows will be inserted here -->
+    </div>
+    <div class="sequence-controls">
+      <button type="button" onclick="addOffSequenceRow()">Add Off Command</button>
+    </div>
+  </div>
+
+  <!-- GUI Selection Panel -->
+  <div class="extras-section">
+    <h2>GUI Selection</h2>
+    <div id="guiSelection">
+      <!-- GUI checkboxes will be inserted here -->
     </div>
   </div>
 
@@ -465,9 +529,12 @@
     let buttonConfigs = {};    // holds current config for remote buttons
     let availableDevices = []; // list from devices.json
     let deviceCommandsCache = {}; // cache for device commands
-    let sceneSequence = [];    // dynamic list of scene sequence commands
+    let sceneSequence = [];    // on-sequence commands
+    let sceneOffSequence = []; // off-sequence commands
+    let selectedGuis = [];     // list of selected GUIs
+    let availableGuis = [];    // list loaded from guis.json
 
-    // On load: fetch scene config and available devices.
+    // On load: fetch scene config, devices and extras.
     window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('scene')) {
@@ -481,16 +548,13 @@
         if (!response.ok) throw new Error('Failed to fetch scene JSON');
         const data = await response.json();
         buttonConfigs = data;
-        // Load sequence if defined; otherwise, initialize as empty.
-        sceneSequence = buttonConfigs.sequence || [];
         statusEl.textContent = 'Loaded scene: ' + sceneName;
       } catch (err) {
         statusEl.textContent = 'Error loading scene: ' + err.message;
         buttonConfigs = {};
-        sceneSequence = [];
       }
-      loadDevices();
-      renderSequenceEditor();
+      await loadDevices();
+      await loadExtras(); // load sequences and gui selection extras
     });
 
     // Load available devices.
@@ -506,6 +570,27 @@
       } catch (err) {
         console.error('Error loading devices:', err);
       }
+    }
+
+    // Load extras from [sceneName]_gui_extras.json
+    async function loadExtras() {
+      try {
+        const extrasUrl = `http://omote/getJson?filename=${sceneName}_gui_extras.json`;
+        const response = await fetch(extrasUrl);
+        if (!response.ok) throw new Error('No extras file');
+        const extras = await response.json();
+        sceneSequence = extras.onSequence || [];
+        sceneOffSequence = extras.offSequence || [];
+        selectedGuis = extras.selectedGuis || [];
+      } catch (err) {
+        console.log("Extras file not found, initializing empty extras.");
+        sceneSequence = [];
+        sceneOffSequence = [];
+        selectedGuis = [];
+      }
+      renderSequenceEditor();
+      renderOffSequenceEditor();
+      renderGuiSelection();
     }
 
     // --- Modal functions for remote button configuration ---
@@ -695,7 +780,7 @@
       }
     }
 
-    // --- Scene Sequence Editor Functions ---
+    // --- Scene Sequence Editor Functions (On Sequence) ---
     function renderSequenceEditor() {
       const container = document.getElementById('sequenceEditor');
       container.innerHTML = '';
@@ -740,13 +825,12 @@
           const commandSelect = document.createElement('select');
           row.appendChild(commandSelect);
     
-          // Load commands for the selected device and pass the created commandSelect element.
+          // Load commands for the selected device.
           loadDeviceCommands(deviceSelect.value, commandSelect).then(() => {
             commandSelect.value = cmd.command || (commandSelect.options[0] ? commandSelect.options[0].value : '');
             sceneSequence[index].command = commandSelect.value;
           });
         } else if (typeSelect.value === 'sleep') {
-          // Input for sleep duration in ms.
           const sleepInput = document.createElement('input');
           sleepInput.type = 'number';
           sleepInput.placeholder = 'Duration (ms)';
@@ -754,17 +838,15 @@
           sleepInput.oninput = (e) => { sceneSequence[index].duration = parseInt(e.target.value) || 0; };
           row.appendChild(sleepInput);
         }
-        // Up button.
+        // Up, Down, and Remove buttons.
         const upBtn = document.createElement('button');
         upBtn.textContent = '↑';
         upBtn.onclick = () => { if (index > 0) { [sceneSequence[index-1], sceneSequence[index]] = [sceneSequence[index], sceneSequence[index-1]]; renderSequenceEditor(); } };
         row.appendChild(upBtn);
-        // Down button.
         const downBtn = document.createElement('button');
         downBtn.textContent = '↓';
         downBtn.onclick = () => { if (index < sceneSequence.length - 1) { [sceneSequence[index+1], sceneSequence[index]] = [sceneSequence[index], sceneSequence[index+1]]; renderSequenceEditor(); } };
         row.appendChild(downBtn);
-        // Remove button.
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Remove';
         removeBtn.onclick = () => { sceneSequence.splice(index, 1); renderSequenceEditor(); };
@@ -773,27 +855,176 @@
       });
     }
     function addSequenceRow() {
-      // Add a default command row.
       sceneSequence.push({ type: 'command', device: availableDevices[0] || '', command: '' });
       renderSequenceEditor();
     }
-    // --- End Scene Sequence Editor Functions ---
 
-    // Save entire scene configuration (including buttonConfigs and sequence).
+    // --- Scene Off Sequence Editor Functions ---
+    function renderOffSequenceEditor() {
+      const container = document.getElementById('offSequenceEditor');
+      container.innerHTML = '';
+      sceneOffSequence.forEach((cmd, index) => {
+        const row = document.createElement('div');
+        row.className = 'sequence-row';
+        row.dataset.index = index;
+        const typeSelect = document.createElement('select');
+        typeSelect.onchange = (e) => {
+          sceneOffSequence[index].type = e.target.value;
+          renderOffSequenceEditor();
+        };
+        const optCommand = document.createElement('option');
+        optCommand.value = 'command';
+        optCommand.textContent = 'Command';
+        const optSleep = document.createElement('option');
+        optSleep.value = 'sleep';
+        optSleep.textContent = 'Sleep';
+        typeSelect.appendChild(optCommand);
+        typeSelect.appendChild(optSleep);
+        typeSelect.value = cmd.type || 'command';
+        row.appendChild(typeSelect);
+        
+        if (typeSelect.value === 'command') {
+          const deviceSelect = document.createElement('select');
+          availableDevices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device;
+            option.textContent = device;
+            deviceSelect.appendChild(option);
+          });
+          deviceSelect.value = cmd.device || (availableDevices[0] || '');
+          deviceSelect.onchange = (e) => {
+            sceneOffSequence[index].device = e.target.value;
+            renderOffSequenceEditor();
+          };
+          row.appendChild(deviceSelect);
+          
+          const commandSelect = document.createElement('select');
+          row.appendChild(commandSelect);
+          
+          loadDeviceCommands(deviceSelect.value, commandSelect).then(() => {
+            commandSelect.value = cmd.command || (commandSelect.options[0] ? commandSelect.options[0].value : '');
+            sceneOffSequence[index].command = commandSelect.value;
+          });
+        } else if (typeSelect.value === 'sleep') {
+          const sleepInput = document.createElement('input');
+          sleepInput.type = 'number';
+          sleepInput.placeholder = 'Duration (ms)';
+          sleepInput.value = cmd.duration || 1000;
+          sleepInput.oninput = (e) => { sceneOffSequence[index].duration = parseInt(e.target.value) || 0; };
+          row.appendChild(sleepInput);
+        }
+        const upBtn = document.createElement('button');
+        upBtn.textContent = '↑';
+        upBtn.onclick = () => { if (index > 0) { [sceneOffSequence[index-1], sceneOffSequence[index]] = [sceneOffSequence[index], sceneOffSequence[index-1]]; renderOffSequenceEditor(); } };
+        row.appendChild(upBtn);
+        const downBtn = document.createElement('button');
+        downBtn.textContent = '↓';
+        downBtn.onclick = () => { if (index < sceneOffSequence.length - 1) { [sceneOffSequence[index+1], sceneOffSequence[index]] = [sceneOffSequence[index], sceneOffSequence[index+1]]; renderOffSequenceEditor(); } };
+        row.appendChild(downBtn);
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'Remove';
+        removeBtn.onclick = () => { sceneOffSequence.splice(index, 1); renderOffSequenceEditor(); };
+        row.appendChild(removeBtn);
+        container.appendChild(row);
+      });
+    }
+    function addOffSequenceRow() {
+      sceneOffSequence.push({ type: 'command', device: availableDevices[0] || '', command: '' });
+      renderOffSequenceEditor();
+    }
+
+    // --- GUI Selection Rendering ---
+    async function renderGuiSelection() {
+      const container = document.getElementById('guiSelection');
+      container.innerHTML = '';
+      try {
+        const response = await fetch('http://omote/getJson?filename=guis.json');
+        if (!response.ok) throw new Error('Failed to fetch guis');
+        let guis = await response.json();
+        // Always include these two even if not in the file.
+        const defaultGuis = [
+          { name: 'Settings', guiname: 'Settings' },
+          { name: 'Scene selection', guiname: 'Scene selection' }
+        ];
+        // Merge with fetched list (prepend the defaults).
+        guis = defaultGuis.concat(guis);
+        // Remove duplicates based on guiname.
+        const uniqueGuis = [];
+        const seen = new Set();
+        for (let gui of guis) {
+          if (!seen.has(gui.guiname)) {
+            uniqueGuis.push(gui);
+            seen.add(gui.guiname);
+          }
+        }
+        availableGuis = uniqueGuis;
+        uniqueGuis.forEach(gui => {
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = 'gui_' + gui.guiname;
+          checkbox.value = gui.guiname;
+          checkbox.checked = selectedGuis.includes(gui.guiname);
+          checkbox.onchange = (e) => {
+            if (e.target.checked) {
+              if (!selectedGuis.includes(gui.guiname)) {
+                selectedGuis.push(gui.guiname);
+              }
+            } else {
+              const idx = selectedGuis.indexOf(gui.guiname);
+              if (idx > -1) selectedGuis.splice(idx, 1);
+            }
+          };
+          const label = document.createElement('label');
+          label.htmlFor = checkbox.id;
+          label.textContent = gui.name;
+          const wrapper = document.createElement('div');
+          wrapper.appendChild(checkbox);
+          wrapper.appendChild(label);
+          container.appendChild(wrapper);
+        });
+      } catch (err) {
+        console.error('Error rendering GUI selection:', err);
+        container.textContent = 'Failed to load GUI list';
+      }
+    }
+
+    // --- Save Functions ---
+    async function saveExtras() {
+      const extras = {
+        onSequence: sceneSequence,
+        offSequence: sceneOffSequence,
+        selectedGuis: selectedGuis
+      };
+      try {
+        const formData = new FormData();
+        formData.append('filename', `${sceneName}_gui_extras.json`);
+        formData.append('action', 'Save');
+        formData.append('jsonContent', JSON.stringify(extras));
+        const response = await fetch('http://omote/smallUpload', { method: 'POST', body: formData });
+        if (!response.ok) throw new Error('Failed to save extras');
+        const text = await response.text();
+        console.log('Extras saved:', text);
+      } catch (err) {
+        console.error('Error saving extras:', err);
+      }
+    }
     async function saveScene() {
       const statusEl = document.getElementById('statusMessage');
       statusEl.textContent = 'Saving scene...';
-      // Attach the sequence to the scene config.
-      buttonConfigs.sequence = sceneSequence;
+      // Remove sequence data from main scene config as it is now in extras.
+      if (buttonConfigs.sequence) {
+        delete buttonConfigs.sequence;
+      }
       try {
         const formData = new FormData();
         formData.append('filename', `scene_${sceneName}.json`);
         formData.append('action', 'Save');
         formData.append('jsonContent', JSON.stringify(buttonConfigs));
-        const response = await fetch('http://omote/postJson', { method: 'POST', body: formData });
+        const response = await fetch('http://omote/smallUpload', { method: 'POST', body: formData });
         if (!response.ok) throw new Error('Failed to save scene');
         const text = await response.text();
         statusEl.textContent = 'Save successful: ' + text;
+        await saveExtras();
       } catch (err) {
         statusEl.textContent = 'Error saving scene: ' + err.message;
       }
