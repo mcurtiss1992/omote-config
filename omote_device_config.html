@@ -193,21 +193,39 @@
       const statusEl = document.getElementById('statusMessage');
       statusEl.textContent = 'Saving device configuration...';
 
-      const formData = new FormData();
-      formData.append('filename', `device_${deviceName}.json`);
-      formData.append('action', 'Save');
-      formData.append('jsonContent', JSON.stringify(commands));
-
+      // Validate the JSON first.
+      let parsed;
       try {
-        const response = await fetch('http://omote/postJson', {
-          method: 'POST',
-          body: formData
-        });
-        if (!response.ok) throw new Error('Failed to save device config');
-        const text = await response.text();
-        statusEl.textContent = 'Device configuration saved: ' + text;
+        parsed = JSON.parse(JSON.stringify(commands));
       } catch (err) {
-        statusEl.textContent = 'Error saving configuration: ' + err.message;
+        statusMessage.textContent = 'Invalid JSON: ' + err.message;
+        return;
+      }
+      // Confirm with the user before saving.
+      if (!confirm('Warning: Editing this file may break your OMOTE configuration. Do you want to proceed?')) {
+        return;
+      }
+      statusMessage.textContent = 'Saving JSON file...';
+      // Prepare data for saving via POST.
+      filename = `device_${deviceName}.json`
+      const formData = new FormData();
+      formData.append('filename', filename);
+      formData.append('action', 'Save');
+      // Convert JSON to a Blob so it is treated as a file upload
+      const jsonBlob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
+      formData.append('jsonContent', jsonBlob, filename);
+      
+      try {
+        const response = await fetch('http://omote/postJson', { 
+          method: 'POST', 
+          body: formData, 
+          signal: AbortSignal.timeout(30000) 
+        });
+        if (!response.ok) throw new Error('Failed to save JSON file');
+        const text = await response.text();
+        statusMessage.textContent = 'Save successful: ' + text;
+      } catch (err) {
+        statusMessage.textContent = 'Error saving JSON file: ' + err.message;
       }
     });
 

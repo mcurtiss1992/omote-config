@@ -154,7 +154,7 @@
       formData.append('jsonContent', JSON.stringify(scenesData));
       
       try {
-        const response = await fetch('http://omote/postJson', {
+        const response = await fetch('http://omote/smallUpload', {
           method: 'POST',
           body: formData
         });
@@ -173,7 +173,7 @@
       formDataScene.append('action', 'Save');
       formDataScene.append('jsonContent', JSON.stringify(emptyConfig));
       try {
-        const responseScene = await fetch('http://omote/postJson', {
+        const responseScene = await fetch('http://omote/smallUpload', {
           method: 'POST',
           body: formDataScene
         });
@@ -203,7 +203,7 @@
       formData.append('action', 'Save');
       formData.append('jsonContent', JSON.stringify(scenesData));
       try {
-        const response = await fetch('http://omote/postJson', {
+        const response = await fetch('http://omote/smallUpload', {
           method: 'POST',
           body: formData
         });

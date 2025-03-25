@@ -168,7 +168,7 @@
     window.addEventListener('DOMContentLoaded', async () => {
       statusMessage.textContent = 'Loading JSON file...';
       try {
-        const response = await fetch(`http://omote/getJson?filename=${encodeURIComponent(filename)}`);
+        const response = await fetch(`http://omote/getJson?filename=${encodeURIComponent(filename)}`, {signal: AbortSignal.timeout(30000)});
         if (!response.ok) throw new Error('Failed to load JSON file');
         const data = await response.json();
         // Prettify JSON for editing
@@ -199,9 +199,16 @@
       const formData = new FormData();
       formData.append('filename', filename);
       formData.append('action', 'Save');
-      formData.append('jsonContent', JSON.stringify(parsed));
+      // Convert JSON to a Blob so it is treated as a file upload
+      const jsonBlob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
+      formData.append('jsonContent', jsonBlob, filename);
+      
       try {
-        const response = await fetch('http://omote/postJson', { method: 'POST', body: formData });
+        const response = await fetch('http://omote/postJson', { 
+          method: 'POST', 
+          body: formData, 
+          signal: AbortSignal.timeout(30000) 
+        });
         if (!response.ok) throw new Error('Failed to save JSON file');
         const text = await response.text();
         statusMessage.textContent = 'Save successful: ' + text;
